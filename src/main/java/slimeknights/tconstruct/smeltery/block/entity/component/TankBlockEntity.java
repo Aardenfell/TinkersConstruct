@@ -26,6 +26,11 @@ import slimeknights.tconstruct.smeltery.block.component.SearedTankBlock.TankType
 import slimeknights.tconstruct.smeltery.block.entity.ITankBlockEntity;
 import slimeknights.tconstruct.smeltery.item.TankItem;
 
+import net.fabricmc.fabric.api.transfer.v1.transaction.TransactionContext;
+import net.fabricmc.fabric.api.transfer.v1.storage.StorageView;
+import java.util.Collections;
+import java.util.Iterator;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -90,11 +95,30 @@ public class TankBlockEntity extends SmelteryComponentBlockEntity implements ITa
    * Tank methods
    */
 
-  @Override
-  @Nonnull
-  public Storage<FluidVariant> getFluidStorage(@Nullable Direction direction) {
-    return tank;
-  }
+@Override
+@Nonnull
+public Storage<FluidVariant> getFluidStorage(@Nullable Direction direction) {
+  return new Storage<>() {
+    @Override
+    public long insert(FluidVariant resource, long maxAmount, TransactionContext transaction) {
+      long space = tank.getCapacity() - tank.getFluidAmount();
+      if (maxAmount >= FluidConstants.BUCKET && space < FluidConstants.BUCKET) {
+        return 0;
+      }
+      return tank.insert(resource, maxAmount, transaction);
+    }
+
+    @Override
+    public long extract(FluidVariant resource, long maxAmount, TransactionContext transaction) {
+      return tank.extract(resource, maxAmount, transaction);
+    }
+
+    @Override
+    public Iterator<StorageView<FluidVariant>> iterator() {
+      return Collections.emptyIterator();
+    }
+  };
+}
 
   @Nonnull
   @Override
